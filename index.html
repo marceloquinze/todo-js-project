@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>JS Todo</title>
+</head>
+<body>
+	<div class="todo-app">
+		<form id="todo-form" action="">
+			<input 
+				type="text" 
+				name="submit_todo" 
+				id="submit_todo"
+				minlength="5"
+				maxlength="20"
+				required
+				>
+			<input type="submit" value="Enviar" id="submit">
+		</form>
+		<div class="error-messages"></div>
+		<div class="empty-list"></div>
+		<div class="number-items"></div>
+		<ol class="todo-list"></ol>
+	</div>
+<script>
+	// App elements
+	const form = document.querySelector('#todo-form');
+	const todoTextInput = document.querySelector('#submit_todo');
+	const submit = document.querySelector('#submit');
+	const errorMessage = document.querySelector('.error-messages');
+	const cardList = document.querySelector('.todo-list')
+	const emptyList = document.querySelector('.empty-list')
+	const numberItems = document.querySelector('.number-items')
+	
+	// initial state
+	const storedTodos = JSON.parse(localStorage.getItem('todoItems')) ? JSON.parse(localStorage.getItem('todoItems')) : [];
+	displayTotalTodos();
+	displayTodoList();
+
+	// Form validation
+	todoTextInput.addEventListener('input', () => {
+		// Avoid numbers and special chars
+		const regex = /^[A-Za-z\s.]+$/; //validation regex
+		// if it doesn't pass the validation, disable the submit 
+		// button and display an error message
+		if(regex.test(todoTextInput.value) === false){
+			submit.setAttribute('disabled', true);
+			errorMessage.classList = 'error'
+			errorMessage.innerHTML = '<p>Proibido números ou caracteres especiais</p>'
+		}else{
+			// if it passes it, enable submit and hide error message
+			submit.removeAttribute('disabled');
+			errorMessage.innerHTML = ''
+		}
+	});
+	
+	// Card submission
+	form.addEventListener('submit', () => {
+		// Store data in localStorage
+		storedTodos.push([todoTextInput.value, new Date().toLocaleString()])
+		localStorage.setItem('todoItems', JSON.stringify(storedTodos));
+		
+		// Clear the form
+		todoTextInput.value = ''				
+	})
+
+	// Display total of added cards
+	function displayTotalTodos(){
+		const hasTodos = storedTodos.length;
+
+		// display total number of cards
+		numberItems.innerHTML = `<p>Total de cards: ${hasTodos}</p>`;
+
+		// Control the idle notice
+		if(hasTodos){
+			emptyList.innerHTML = '';
+		}else{
+			emptyList.innerHTML = '<p>Tudo parado por aqui</p>';
+		}
+	}
+
+	// Display todo items list
+	function displayTodoList(){
+		cardList.innerHTML = '<p>Loading...</p>';
+		//setTimeout(() => {
+			cardList.innerHTML = ''
+			if( storedTodos ){
+				storedTodos.forEach( (todo, i) => {
+					cardList.innerHTML += `<li class='todo-item' draggable='true'>${todo[0]} | ${todo[1]}<button data-id='${i}' class='delete'>Apagar</button><button data-id='${i}' class='edit'>Editar</button></li>`
+				})
+			}	
+		//}, 1000)
+	}
+
+	// Remove an item from the list
+	const deleteTodo = document.querySelectorAll('.delete')	
+	deleteTodo.forEach( del => {
+		del.addEventListener('click', () => {
+			// get id of clicked button via dataset (data-id)
+			const clicked = parseInt(del.dataset.id)
+			// remove using filter
+			const filteredTodos = storedTodos.filter( (item, index) => {
+				// leave only the items whose index is different from clicked
+				return index !== clicked
+			})
+			// update localStorage
+			localStorage.setItem('todoItems', JSON.stringify(filteredTodos));
+			// reload the page to see the changes
+			window.location.reload();
+		})
+	})
+	
+	// Edit Todo
+	const editTodo = document.querySelectorAll('.edit');
+	editTodo.forEach( edt => {
+		edt.addEventListener('click', () => {
+			const clicked = parseInt(edt.dataset.id)
+			todoTextInput.value = storedTodos[clicked][0]
+			form.addEventListener('submit', () => {
+				// remove using filter
+				const filteredTodos = storedTodos.filter( (item, index) => {
+					// leave only the items whose index is different from clicked
+					return index !== clicked
+				})
+				// update localStorage
+				localStorage.setItem('todoItems', JSON.stringify(filteredTodos));
+				// reload the page to see the changes
+				window.location.reload();				
+			})
+			
+		})
+	})
+
+	// const asyncLocalStorage = {
+	// 	setItem: (key, value) => {
+	// 		return Promise.resolve()
+	// 			.then(() => {
+	// 				localStorage.setItem(key, JSON.stringify(value));
+	// 			}
+	// 		)
+	// 	},
+	// 	getItem: (key) => {
+	// 		return Promise.resolve()
+	// 			.then(() => {
+	// 				const value = localStorage.getItem(key);
+	// 				return value ? JSON.parse(value) : null;
+	// 			}
+	// 		)
+	// 	}
+	// }
+
+	// let todoItems = document.querySelectorAll('.todo-item') // li
+	// todoItems.forEach( item => {
+	// 	item.addEventListener('dragstart', handleDragStart);
+	// 	item.addEventListener('dragover', handleDragOver);
+	// 	item.addEventListener('dragend', handleDragEnd);
+	// 	item.addEventListener('drop', handleDrop);
+	// })
+
+	// function handleDragStart(e){
+	// 	this.style.opacity = '0.4'
+		
+	// 	dragSrcEl = this;
+
+	// 	e.dataTransfer.effectAllowed = 'move';
+	// 	e.dataTransfer.setData('text/html', this.innerHTML);
+	// }
+	// function handleDragEnd(e){
+	// 	this.style.opacity = '1'
+		
+	// 	todoItems.forEach( item => {
+	// 		item.classList.remove('over');
+	// 	})
+	// }
+
+	// function handleDragOver(e){
+	// 	e.preventDefault();
+	// 	return false;
+	// }
+
+	// function handleDrop(e){
+	// 	e.stopPropagation();
+
+	// 	if(dragSrcEl !== this){
+	// 		dragSrcEl.innerHTML = this.innerHTML;
+	// 		this.innerHTML = e.dataTransfer.getData('text/html');
+	// 	}
+		
+	// 	return false;
+	// }
+
+</script>
+<style>
+	.error{
+		color: #f00;
+	}
+	.todo-list{
+		display: flex;
+		flex-direction: column-reverse;
+	}
+	.over{
+		border: 3px dotted #666;
+	}
+</style>	
+</body>
+</html>
